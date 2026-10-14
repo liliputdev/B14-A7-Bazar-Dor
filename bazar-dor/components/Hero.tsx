@@ -6,13 +6,13 @@ export default function Hero() {
       {/* Text */}
       <div className="text-center md:text-left">
         <p className="mb-3 inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
-          আজকের বাজার দর
+          মঙ্গলবার, ৬ অক্টোবর, ২০২৬
         </p>
         <h1 className="text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl">
-          প্রয়োজনীয় পণ্যের দাম <span className="text-green-600">এক নজরে</span>
+          আজকের বাজারের দাম এক নজরে 
         </h1>
         <p className="mt-4 text-gray-600">
-          চাল, ডাল, তেল, সবজি, মাছ ও মাংসের সর্বশেষ দাম দেখুন এবং বিভিন্ন বাজারের দামের তুলনা করুন।
+         চাল, ডাল, তেল, সবজি, মাছ, মাংস, ডিম ও মসলার দাম বাজারভিত্তিক বিস্তারিত, গড়, সর্বনিম্ন-সর্বাধিক এবং দামের পরিবর্তন এক জায়গায়।
         </p>
         <a
           href="#সব-পণ্য"
