@@ -23,7 +23,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <html lang="bn" data-theme="light" className="scroll-smooth"></html>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
+    
   );
 }
