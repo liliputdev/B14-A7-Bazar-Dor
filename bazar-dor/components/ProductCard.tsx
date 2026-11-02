@@ -9,6 +9,9 @@ import {
   toBn,
 } from "@/lib/format";
 
+// Export Product so other components can import it.
+export type { Product };
+
 function getChangeValue(product: Product): number {
   const pct = Number(product.change?.pct ?? 0);
   const dir = String(product.change?.dir ?? "").toLowerCase();
@@ -29,13 +32,25 @@ export function getProductChange(product: Product): number {
 }
 
 export function ProductCard({ product }: { product: Product }) {
-  const name = product.nameBn || product.name || product.title || "পণ্যের নাম পাওয়া যায়নি";
+  const name =
+    product.nameBn ||
+    product.name ||
+    product.title ||
+    "পণ্যের নাম পাওয়া যায়নি";
+
   const slug = product.slug || String(product.id ?? product._id ?? "");
-  const unit = UNIT_BN[product.unit] || product.unit || "কেজি";
-  const change = product.change || { dir: "same", pct: 0 };
+  const unitKey = String(product.unit ?? "").toLowerCase();
+  const unit = UNIT_BN[unitKey as keyof typeof UNIT_BN] || product.unit || "কেজি";
+
+  const change = product.change || { dir: "flat", pct: 0 };
+  const direction = String(change.dir ?? "flat").toLowerCase();
+  const percentage = Number(change.pct ?? 0);
 
   const isUp = getChangeValue(product) > 0;
   const isDown = getChangeValue(product) < 0;
+
+  const safeDirection: "flat" | "up" | "down" =
+    isUp ? "up" : isDown ? "down" : "flat";
 
   return (
     <Link href={`/product/${slug}`} className="block group">
@@ -64,9 +79,9 @@ export function ProductCard({ product }: { product: Product }) {
           </p>
 
           <div
-            className={`inline-flex items-center gap-1 mt-2 text-sm font-bold ${tickerColor(change.dir)}`}
+            className={`inline-flex items-center gap-1 mt-2 text-sm font-bold ${tickerColor(safeDirection)}`}
           >
-            {arrow(change.dir)} {formatPct(change.pct)}
+            {arrow(safeDirection)} {formatPct(percentage)}
           </div>
         </div>
       </div>
