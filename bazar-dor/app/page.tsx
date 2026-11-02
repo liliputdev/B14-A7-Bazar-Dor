@@ -84,7 +84,7 @@ export default async function HomePage() {
               className="z-10 select-none text-9xl"
               aria-hidden="true"
             >
-              🧺
+              <img src="bazar-hero.png" alt="Bazar Hero" />
             </span>
           </div>
         </section>
