@@ -1,57 +1,72 @@
-import Link from 'next/link';
 
-export interface Product {
-  id: string | number;
-  slug: string;
-  name: string;
-  unit: string;
-  price: number | string;
-  change: number; // Positive = up, Negative = down, 0 = neutral
-  emoji: string;
+import Link from "next/link";
+import type { Product } from "@/lib/api";
+import {
+  UNIT_BN,
+  arrow,
+  formatPct,
+  tickerColor,
+  toBn,
+} from "@/lib/format";
+
+function getChangeValue(product: Product): number {
+  const pct = Number(product.change?.pct ?? 0);
+  const dir = String(product.change?.dir ?? "").toLowerCase();
+
+  if (["down", "decrease", "negative", "fall"].includes(dir)) {
+    return -Math.abs(pct);
+  }
+
+  if (["up", "increase", "positive", "rise"].includes(dir)) {
+    return Math.abs(pct);
+  }
+
+  return 0;
+}
+
+export function getProductChange(product: Product): number {
+  return getChangeValue(product);
 }
 
 export function ProductCard({ product }: { product: Product }) {
-  const isUp = product.change > 0;
-  const isDown = product.change < 0;
+  const name = product.nameBn || product.name || product.title || "পণ্যের নাম পাওয়া যায়নি";
+  const slug = product.slug || String(product.id ?? product._id ?? "");
+  const unit = UNIT_BN[product.unit] || product.unit || "কেজি";
+  const change = product.change || { dir: "same", pct: 0 };
+
+  const isUp = getChangeValue(product) > 0;
+  const isDown = getChangeValue(product) < 0;
 
   return (
-    <Link href={`/product/${product.slug}`} className="block group">
+    <Link href={`/product/${slug}`} className="block group">
       <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full">
-        {/* Top: Thumbnail & Title */}
         <div className="flex items-start gap-3">
-          <div className="w-11 h-11 bg-gray-50 rounded-xl flex items-center justify-center text-xl shrink-0">
-            {product.emoji || '🍚'}
+          <div className="w-11 h-11 bg-gray-50 rounded-xl flex items-center justify-center text-2xl shrink-0">
+            {product.image || "🛒"}
           </div>
-          <div>
-            <h3 className="font-bold text-gray-800 text-sm md:text-base leading-snug group-hover:text-emerald-700 transition-colors">
-              {product.name}
+
+          <div className="min-w-0">
+            <h3 className="font-semibold text-gray-900 group-hover:text-green-700 transition-colors">
+              {name}
             </h3>
-            <p className="text-xs text-gray-400 font-medium mt-0.5">
-              {product.unit || 'প্রতি কেজি'}
+
+            <p className="text-sm text-gray-500 mt-1">
+              প্রতি {unit}
             </p>
           </div>
         </div>
 
-        {/* Bottom: Price & Badge */}
-        <div className="mt-4 pt-3 border-t border-gray-50 flex items-end justify-between">
-          <div>
-            <span className="text-[11px] text-gray-400 block font-medium">আজকের দর</span>
-            <span className="text-base md:text-lg font-bold text-gray-900">
-              {product.price} টাকা
-            </span>
-          </div>
+        <div className="mt-5">
+          <span className="text-xs text-gray-500">আজকের দর</span>
+
+          <p className="text-xl font-bold text-gray-900 mt-1">
+            {product.today != null ? toBn(product.today) : "—"} টাকা
+          </p>
 
           <div
-            className={`px-2 py-0.5 rounded-md text-xs font-semibold flex items-center gap-0.5 ${
-              isUp
-                ? 'bg-rose-50 text-rose-600'
-                : isDown
-                ? 'bg-emerald-50 text-emerald-600'
-                : 'bg-gray-100 text-gray-500'
-            }`}
+            className={`inline-flex items-center gap-1 mt-2 text-sm font-bold ${tickerColor(change.dir)}`}
           >
-            <span>{isUp ? '▲' : isDown ? '▼' : '—'}</span>
-            <span>{Math.abs(product.change)}%</span>
+            {arrow(change.dir)} {formatPct(change.pct)}
           </div>
         </div>
       </div>

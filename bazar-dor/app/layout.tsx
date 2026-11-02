@@ -1,10 +1,10 @@
+
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { Hind_Siliguri } from "next/font/google";
-import Navbar from "@/components/Navbar";
+import NavbarWithDate from "@/components/NavbarWithDate";
 import Ticker from "@/components/Ticker";
 import Footer from "@/components/Footer";
-
 
 import {
   getCategories,
@@ -12,7 +12,6 @@ import {
   type Category,
   type Product,
 } from "@/lib/api";
-import { banglaDate } from "@/lib/format";
 
 const hindSiliguri = Hind_Siliguri({
   subsets: ["bengali", "latin"],
@@ -33,15 +32,22 @@ export default async function RootLayout({
 }) {
   let categories: Category[] = [];
   let products: Product[] = [];
-  let error = "";
 
-  try {
-    [categories, products] = await Promise.all([
-      getCategories(),
-      getProducts(),
-    ]);
-  } catch (e) {
-    error = String(e);
+  const [categoryResult, productResult] = await Promise.allSettled([
+    getCategories(),
+    getProducts(),
+  ]);
+
+  if (categoryResult.status === "fulfilled") {
+    categories = categoryResult.value;
+  } else {
+    console.error("Category API failed:", categoryResult.reason);
+  }
+
+  if (productResult.status === "fulfilled") {
+    products = productResult.value;
+  } else {
+    console.error("Product API failed:", productResult.reason);
   }
 
   return (
@@ -51,22 +57,15 @@ export default async function RootLayout({
       className={`${hindSiliguri.variable} scroll-smooth`}
     >
       <body className="flex min-h-screen flex-col bg-gray-50 font-sans text-gray-900">
-        <Navbar categories={categories} date={banglaDate()} />
+        <NavbarWithDate categories={categories} />
 
-        {error ? (
-          <div className="bg-red-100 p-3 text-center text-red-700">
-            Data could not load: {error}
-          </div>
-        ) : (
-          <Ticker products={products} />
-        )}
+        {products.length > 0 && <Ticker products={products} />}
 
         <main className="mx-auto w-full max-w-full flex-1 p-0">
-  {children}
-</main>
+          {children}
+        </main>
 
-<Footer />
-
+        <Footer />
         <Toaster position="top-right" />
       </body>
     </html>

@@ -1,30 +1,27 @@
-import AllProductsSection from "@/components/AllProductsSection";
-import { ProductCard } from "@/components/ProductCard";
-import { getProducts } from "@/lib/api";
 
-type Product = {
-  id?: string | number;
-  slug?: string;
-  change?: number | string | null;
-  [key: string]: any;
-};
+import AllProductsSection from "@/components/AllProductsSection";
+import {
+  ProductCard,
+  getProductChange,
+  type Product,
+} from "@/components/ProductCard";
+import { getProducts } from "@/lib/api";
 
 export default async function HomePage() {
   let products: Product[] = [];
   let hasError = false;
 
   try {
-    const response: any = await getProducts();
+    const response = await getProducts();
 
-    // Handle common API response formats safely
     if (Array.isArray(response)) {
       products = response;
-    } else if (Array.isArray(response?.products)) {
-      products = response.products;
-    } else if (Array.isArray(response?.data)) {
-      products = response.data;
+    } else if (Array.isArray((response as any)?.products)) {
+      products = (response as any).products;
+    } else if (Array.isArray((response as any)?.data)) {
+      products = (response as any).data;
     } else {
-      console.error("Unexpected products API response:", response);
+      console.error("Unexpected API response:", response);
       hasError = true;
     }
   } catch (error) {
@@ -32,22 +29,19 @@ export default async function HomePage() {
     hasError = true;
   }
 
-  // Safely convert price changes to numbers
   const risers = products
-    .filter((product) => Number(product.change) > 0)
+    .filter((product) => getProductChange(product) > 0)
+    .sort(
+      (a, b) => getProductChange(b) - getProductChange(a)
+    )
     .slice(0, 6);
 
   const fallers = products
-    .filter((product) => Number(product.change) < 0)
+    .filter((product) => getProductChange(product) < 0)
+    .sort(
+      (a, b) => getProductChange(a) - getProductChange(b)
+    )
     .slice(0, 6);
-
-  const today = new Date().toLocaleDateString("bn-BD", {
-    timeZone: "Asia/Dhaka",
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
 
   return (
     <div className="min-h-screen bg-[#f2f5f3] pb-16">
@@ -57,7 +51,7 @@ export default async function HomePage() {
         <section className="flex flex-col items-center justify-between gap-8 rounded-3xl border border-gray-100 bg-white p-8 shadow-sm md:flex-row md:p-12">
           <div className="max-w-xl space-y-4">
             <span className="inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-              {today}
+              আজকের বাজারদর
             </span>
 
             <h1 className="text-3xl font-extrabold leading-tight text-gray-900 md:text-5xl">
@@ -80,12 +74,11 @@ export default async function HomePage() {
 
           <div className="relative flex aspect-square w-full max-w-[320px] items-center justify-center">
             <div className="absolute h-64 w-64 rounded-full bg-emerald-50" />
-            <span
-              className="z-10 select-none text-9xl"
-              aria-hidden="true"
-            >
-              <img src="bazar-hero.png" alt="Bazar Hero" />
-            </span>
+            <img
+              src="/bazar-hero.png"
+              alt="Bazar Hero"
+              className="relative z-10 max-h-full max-w-full object-contain"
+            />
           </div>
         </section>
 
@@ -100,7 +93,12 @@ export default async function HomePage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {risers.map((product, index) => (
                 <ProductCard
-                  key={product.id ?? product.slug ?? `riser-${index}`}
+                  key={
+                    product.id ??
+                    product.slug ??
+                    product._id ??
+                    `riser-${index}`
+                  }
                   product={product}
                 />
               ))}
@@ -119,7 +117,12 @@ export default async function HomePage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {fallers.map((product, index) => (
                 <ProductCard
-                  key={product.id ?? product.slug ?? `faller-${index}`}
+                  key={
+                    product.id ??
+                    product.slug ??
+                    product._id ??
+                    `faller-${index}`
+                  }
                   product={product}
                 />
               ))}
@@ -128,32 +131,21 @@ export default async function HomePage() {
         )}
 
         {/* All Products */}
-        <section id="সব-পণ্য" className="space-y-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              সব পণ্য
-            </h2>
-            <p className="mt-1 text-xs text-gray-500">
-              মোট {products.length}টি পণ্যের তথ্য
-            </p>
-          </div>
-
+        <section id="সব-পণ্য">
           {hasError ? (
             <div className="rounded-2xl border border-amber-200 bg-white p-8 text-center">
               <p className="font-semibold text-gray-800">
                 পণ্যের তথ্য লোড করা যায়নি
               </p>
               <p className="mt-2 text-sm text-gray-500">
-                API সংযোগ ও সার্ভার টার্মিনালের error পরীক্ষা করুন।
+                API সংযোগ পরীক্ষা করুন।
               </p>
             </div>
           ) : products.length > 0 ? (
             <AllProductsSection products={products} />
           ) : (
             <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center">
-              <p className="font-semibold text-gray-800">
-                এখনো কোনো পণ্যের তথ্য পাওয়া যায়নি।
-              </p>
+              এখনো কোনো পণ্যের তথ্য পাওয়া যায়নি।
             </div>
           )}
         </section>
