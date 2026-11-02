@@ -2,6 +2,7 @@
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { Hind_Siliguri } from "next/font/google";
+
 import NavbarWithDate from "@/components/NavbarWithDate";
 import Ticker from "@/components/Ticker";
 import Footer from "@/components/Footer";
@@ -66,6 +67,7 @@ export default async function RootLayout({
         </main>
 
         <Footer />
+
         <Toaster position="top-right" />
       </body>
     </html>
