@@ -1,5 +1,6 @@
-
 import { notFound } from "next/navigation";
+
+export const instant = false;
 
 type Props = {
   params: Promise<{ slug: string }>;
