@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 
 export default function SignupPage() {
   const router = useRouter();
+
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
@@ -21,8 +22,20 @@ export default function SignupPage() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (loading) return;
+
     const name = form.name.trim();
-    const email = form.email.trim();
+    const email = form.email.trim().toLowerCase();
+
+    if (!name) {
+      toast.error("আপনার নাম লিখুন");
+      return;
+    }
+
+    if (!email) {
+      toast.error("আপনার ইমেইল লিখুন");
+      return;
+    }
 
     if (form.password.length < 8) {
       toast.error("পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে");
@@ -37,65 +50,99 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const { error } = await authClient.signUp.email({
+      const { data, error } = await authClient.signUp.email({
         name,
         email,
         password: form.password,
+        callbackURL: "/profile",
       });
 
       if (error) {
+        console.error("Signup API error:", error);
         toast.error(error.message || "অ্যাকাউন্ট তৈরি করা যায়নি");
         return;
       }
 
-      toast.success("অ্যাকাউন্ট তৈরি হয়েছে!");
-      router.push("/signin");
-    } catch {
-      toast.error("কিছু একটা সমস্যা হয়েছে");
+      if (!data) {
+        toast.error("অ্যাকাউন্ট তৈরি নিশ্চিত করা যায়নি");
+        return;
+      }
+
+      toast.success("অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!");
+
+      router.replace("/profile");
+      router.refresh();
+    } catch (error) {
+      console.error("Signup failed:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "কিছু একটা সমস্যা হয়েছে"
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const socialLogin = async (provider: "google" | "github") => {
+  const googleLogin = async () => {
+    if (loading) return;
+
     try {
+      setLoading(true);
+
       const { error } = await authClient.signIn.social({
-        provider,
-        callbackURL: "/",
+        provider: "google",
+        callbackURL: "/profile",
       });
 
       if (error) {
-        toast.error(error.message || "লগইন করা যায়নি");
+        console.error("Google signup error:", error);
+        toast.error(error.message || "Google দিয়ে অ্যাকাউন্ট তৈরি করা যায়নি");
+        setLoading(false);
       }
-    } catch {
-      toast.error("লগইন করা যায়নি");
+    } catch (error) {
+      console.error("Google signup failed:", error);
+      toast.error("Google login failed");
+      setLoading(false);
     }
   };
 
   return (
     <main className="min-h-screen bg-[#eff5f0] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-[430px]">
+
+        {/* Header */}
         <div className="text-center mb-6">
           <Link href="/" className="text-2xl font-bold text-green-700">
             বাজার দর
           </Link>
+
           <h1 className="text-xl font-bold text-[#26332b] mt-5">
             অ্যাকাউন্ট তৈরি করুন
           </h1>
+
           <p className="text-sm text-gray-500 mt-2">
             আপনার অ্যাকাউন্ট তৈরি করতে তথ্য দিন
           </p>
         </div>
 
+        {/* Signup Form */}
         <form
           onSubmit={handleSubmit}
           className="bg-white border border-[#e1e9e2] rounded-xl p-6 shadow-sm"
         >
           <div className="space-y-4">
+
+            {/* Name */}
             <div>
-              <label className="block text-sm font-semibold mb-2">নাম</label>
+              <label className="block text-sm font-semibold mb-2">
+                নাম
+              </label>
+
               <input
                 required
+                type="text"
+                autoComplete="name"
                 value={form.name}
                 onChange={(e) =>
                   setForm({ ...form, name: e.target.value })
@@ -105,11 +152,16 @@ export default function SignupPage() {
               />
             </div>
 
+            {/* Email */}
             <div>
-              <label className="block text-sm font-semibold mb-2">ইমেইল</label>
+              <label className="block text-sm font-semibold mb-2">
+                ইমেইল
+              </label>
+
               <input
                 required
                 type="email"
+                autoComplete="email"
                 value={form.email}
                 onChange={(e) =>
                   setForm({ ...form, email: e.target.value })
@@ -119,14 +171,17 @@ export default function SignupPage() {
               />
             </div>
 
+            {/* Password */}
             <div>
               <label className="block text-sm font-semibold mb-2">
                 পাসওয়ার্ড
               </label>
+
               <input
                 required
                 minLength={8}
                 type="password"
+                autoComplete="new-password"
                 value={form.password}
                 onChange={(e) =>
                   setForm({ ...form, password: e.target.value })
@@ -136,13 +191,16 @@ export default function SignupPage() {
               />
             </div>
 
+            {/* Confirm Password */}
             <div>
               <label className="block text-sm font-semibold mb-2">
                 পাসওয়ার্ড নিশ্চিত করুন
               </label>
+
               <input
                 required
                 type="password"
+                autoComplete="new-password"
                 value={form.confirmPassword}
                 onChange={(e) =>
                   setForm({ ...form, confirmPassword: e.target.value })
@@ -153,6 +211,7 @@ export default function SignupPage() {
             </div>
           </div>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
@@ -161,30 +220,24 @@ export default function SignupPage() {
             {loading ? "অ্যাকাউন্ট তৈরি হচ্ছে..." : "অ্যাকাউন্ট তৈরি করুন"}
           </button>
 
+          {/* Divider */}
           <div className="flex items-center gap-3 my-5 text-xs text-gray-400">
             <div className="h-px bg-gray-200 flex-1" />
             অথবা
             <div className="h-px bg-gray-200 flex-1" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => socialLogin("google")}
-              className="border rounded-lg py-3 text-sm font-semibold hover:bg-gray-50"
-            >
-              Google
-            </button>
+          {/* Google Signup */}
+          <button
+            type="button"
+            onClick={googleLogin}
+            disabled={loading}
+            className="w-full border rounded-lg py-3 text-sm font-semibold hover:bg-gray-50 disabled:opacity-60"
+          >
+            Continue with Google
+          </button>
 
-            <button
-              type="button"
-              onClick={() => socialLogin("github")}
-              className="border rounded-lg py-3 text-sm font-semibold hover:bg-gray-50"
-            >
-              GitHub
-            </button>
-          </div>
-
+          {/* Signin Link */}
           <p className="text-center text-sm text-gray-500 mt-5">
             অ্যাকাউন্ট আছে?{" "}
             <Link href="/signin" className="text-green-700 font-bold">
