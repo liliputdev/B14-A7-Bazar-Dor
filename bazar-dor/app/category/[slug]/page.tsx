@@ -1,6 +1,7 @@
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import {
   getCategory,
   getProductsByCategory,
@@ -11,7 +12,19 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-export default async function CategoryPage({ params }: Props) {
+export default function CategoryPage({ params }: Props) {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#f0f5f1]" aria-busy="true" />
+      }
+    >
+      <CategoryContent params={params} />
+    </Suspense>
+  );
+}
+
+async function CategoryContent({ params }: Props) {
   const { slug } = await params;
 
   const [categoryResult, productsResult] = await Promise.allSettled([
@@ -26,6 +39,10 @@ export default async function CategoryPage({ params }: Props) {
   const category = categoryResult.value;
   const products =
     productsResult.status === "fulfilled" ? productsResult.value : [];
+
+  if (productsResult.status === "rejected") {
+    console.error("Category products API failed:", productsResult.reason);
+  }
 
   const categoryName =
     category.nameBn ||
@@ -54,9 +71,11 @@ export default async function CategoryPage({ params }: Props) {
             এই ক্যাটাগরির সকল পণ্যের বাজার দর
           </p>
 
-          <p className="mt-3 text-xs text-gray-400">
-            মোট {products.length} টি পণ্য
-          </p>
+          {productsResult.status === "fulfilled" && (
+            <p className="mt-3 text-xs text-gray-400">
+              মোট {products.length} টি পণ্য
+            </p>
+          )}
         </section>
 
         {/* Products */}
@@ -66,7 +85,16 @@ export default async function CategoryPage({ params }: Props) {
             সকল পণ্য
           </h2>
 
-          {products.length > 0 ? (
+          {productsResult.status === "rejected" ? (
+            <div className="rounded-xl border border-amber-200 bg-white p-10 text-center">
+              <p className="text-sm font-semibold text-gray-700">
+                পণ্যের তথ্য লোড করা যায়নি।
+              </p>
+              <p className="mt-2 text-sm text-gray-500">
+                API সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।
+              </p>
+            </div>
+          ) : products.length > 0 ? (
             <SortableProductGrid products={products} />
           ) : (
             <div className="rounded-xl bg-white p-10 text-center">

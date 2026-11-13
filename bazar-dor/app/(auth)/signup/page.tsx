@@ -59,21 +59,13 @@ export default function SignupPage() {
 
       if (error) {
         console.error("Signup API error:", error);
-        // BetterAuth error object may store the message in different fields
-        const errMsg =
-          error.message ||
-          (error as any).statusText ||
-          (error as any).code ||
-          JSON.stringify(error);
-        // Map common BetterAuth error codes to Bengali messages
+        const errMsg = (error.message ?? "").toLowerCase();
         const friendlyMsg =
-          errMsg.toLowerCase().includes("user already exists") ||
-          errMsg.toLowerCase().includes("email already")
+          errMsg.includes("user already exists") ||
+          errMsg.includes("email already")
             ? "এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট তৈরি হয়েছে। সাইন ইন করুন।"
-            : errMsg.toLowerCase().includes("password")
+            : errMsg.includes("password")
             ? "পাসওয়ার্ড যথেষ্ট শক্তিশালী নয়"
-            : errMsg !== "{}" && errMsg
-            ? errMsg
             : "অ্যাকাউন্ট তৈরি করা যায়নি। আবার চেষ্টা করুন।";
         toast.error(friendlyMsg);
         return;
@@ -90,11 +82,7 @@ export default function SignupPage() {
       router.refresh();
     } catch (error) {
       console.error("Signup failed:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।"
-      );
+      toast.error("কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।");
     } finally {
       setLoading(false);
     }
@@ -113,12 +101,12 @@ export default function SignupPage() {
 
       if (error) {
         console.error("Google signup error:", error);
-        toast.error(error.message || "Google দিয়ে অ্যাকাউন্ট তৈরি করা যায়নি");
+        toast.error("Google দিয়ে অ্যাকাউন্ট তৈরি করা যায়নি");
         setLoading(false);
       }
     } catch (error) {
       console.error("Google signup failed:", error);
-      toast.error("Google login failed");
+      toast.error("Google দিয়ে অ্যাকাউন্ট তৈরি করা যায়নি");
       setLoading(false);
     }
   };

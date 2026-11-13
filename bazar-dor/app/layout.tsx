@@ -2,6 +2,7 @@
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { Hind_Siliguri } from "next/font/google";
+import { Suspense } from "react";
 
 import NavbarWithDate from "@/components/NavbarWithDate";
 import Ticker from "@/components/Ticker";
@@ -59,7 +60,9 @@ export default async function RootLayout({
       className={`${hindSiliguri.variable} scroll-smooth`}
     >
       <body className="flex min-h-screen flex-col bg-gray-50 font-sans text-gray-900">
-        <NavbarWithDate categories={categories} />
+        <Suspense fallback={<header className="h-[110px] bg-white" />}>
+          <NavbarWithDate categories={categories} />
+        </Suspense>
 
         {products.length > 0 && <Ticker products={products} />}
 

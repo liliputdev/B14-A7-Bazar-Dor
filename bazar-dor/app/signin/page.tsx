@@ -37,21 +37,15 @@ export default function SigninPage() {
 
       if (error) {
         console.error("Login error:", error);
-        const errMsg =
-          error.message ||
-          (error as any).statusText ||
-          (error as any).code ||
-          "";
+        const errMsg = (error.message ?? "").toLowerCase();
         const friendlyMsg =
-          errMsg.toLowerCase().includes("invalid") ||
-          errMsg.toLowerCase().includes("credential") ||
-          errMsg.toLowerCase().includes("password")
+          errMsg.includes("invalid") ||
+          errMsg.includes("credential") ||
+          errMsg.includes("password")
             ? "ইমেইল অথবা পাসওয়ার্ড ভুল"
-            : errMsg.toLowerCase().includes("not found") ||
-              errMsg.toLowerCase().includes("user")
+            : errMsg.includes("not found") ||
+              errMsg.includes("user")
             ? "এই ইমেইলে কোনো অ্যাকাউন্ট নেই"
-            : errMsg
-            ? errMsg
             : "লগইন করা যায়নি। আবার চেষ্টা করুন।";
         toast.error(friendlyMsg);
         return;
@@ -87,7 +81,7 @@ export default function SigninPage() {
 
       if (error) {
         console.error("Google login error:", error);
-        toast.error(error.message || "Google দিয়ে লগইন করা যায়নি");
+        toast.error("Google দিয়ে লগইন করা যায়নি");
         setLoading(false);
       }
     } catch (err) {

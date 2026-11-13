@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { getProduct, type Product } from "@/lib/api";
 
 
@@ -45,7 +46,19 @@ function getUnit(unit?: string) {
   return units[unit?.toLowerCase() || ""] || unit || "কেজি";
 }
 
-export default async function ProductPage({ params }: Props) {
+export default function ProductPage({ params }: Props) {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#f1f6f2]" aria-busy="true" />
+      }
+    >
+      <ProductContent params={params} />
+    </Suspense>
+  );
+}
+
+async function ProductContent({ params }: Props) {
   const { slug } = await params;
 
   let product: Product | null;
