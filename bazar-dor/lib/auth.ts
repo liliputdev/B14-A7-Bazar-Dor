@@ -6,12 +6,12 @@ import { mongodbAdapter } from "@better-auth/mongo-adapter";
 const mongoUri = process.env.MONGODB_URI;
 const authSecret = process.env.BETTER_AUTH_SECRET;
 
-if (!mongoUri?.startsWith("mongodb")) {
-  throw new Error("Invalid MONGODB_URI in .env.local");
+if (!mongoUri?.match(/^mongodb(\+srv)?:\/\//)) {
+  throw new Error("Invalid MONGODB_URI. Configure it in the server environment.");
 }
 
 if (!authSecret || authSecret.length < 32) {
-  throw new Error("BETTER_AUTH_SECRET must be at least 32 characters");
+  throw new Error("BETTER_AUTH_SECRET must be at least 32 characters.");
 }
 
 const client = new MongoClient(mongoUri);

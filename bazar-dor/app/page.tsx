@@ -1,4 +1,5 @@
 
+import Image from "next/image";
 import AllProductsSection from "@/components/AllProductsSection";
 import {
   ProductCard,
@@ -12,18 +13,7 @@ export default async function HomePage() {
   let hasError = false;
 
   try {
-    const response = await getProducts();
-
-    if (Array.isArray(response)) {
-      products = response;
-    } else if (Array.isArray((response as any)?.products)) {
-      products = (response as any).products;
-    } else if (Array.isArray((response as any)?.data)) {
-      products = (response as any).data;
-    } else {
-      console.error("Unexpected API response:", response);
-      hasError = true;
-    }
+    products = await getProducts();
   } catch (error) {
     console.error("Failed to fetch products:", error);
     hasError = true;
@@ -74,9 +64,11 @@ export default async function HomePage() {
 
           <div className="relative flex aspect-square w-full max-w-[320px] items-center justify-center">
             <div className="absolute h-64 w-64 rounded-full bg-emerald-50" />
-            <img
+            <Image
               src="/bazar-hero.png"
               alt="Bazar Hero"
+              width={320}
+              height={320}
               className="relative z-10 max-h-full max-w-full object-contain"
             />
           </div>

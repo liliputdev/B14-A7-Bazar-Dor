@@ -42,9 +42,7 @@ export function ProductCard({ product }: { product: Product }) {
   const unitKey = String(product.unit ?? "").toLowerCase();
   const unit = UNIT_BN[unitKey as keyof typeof UNIT_BN] || product.unit || "কেজি";
 
-  const change = product.change || { dir: "flat", pct: 0 };
-  const direction = String(change.dir ?? "flat").toLowerCase();
-  const percentage = Number(change.pct ?? 0);
+  const percentage = Number(product.change?.pct ?? 0);
 
   const isUp = getChangeValue(product) > 0;
   const isDown = getChangeValue(product) < 0;

@@ -1,10 +1,11 @@
-export const instant = false;
+export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   getCategory,
   getProductsByCategory,
 } from "@/lib/api";
+import SortableProductGrid from "@/components/SortableProductGrid";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -13,21 +14,18 @@ type Props = {
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params;
 
-  let category;
-  let products;
+  const [categoryResult, productsResult] = await Promise.allSettled([
+    getCategory(slug),
+    getProductsByCategory(slug),
+  ]);
 
-  try {
-    [category, products] = await Promise.all([
-      getCategory(slug),
-      getProductsByCategory(slug),
-    ]);
-  } catch {
+  if (categoryResult.status === "rejected" || !categoryResult.value) {
     notFound();
   }
 
-  if (!category) {
-    notFound();
-  }
+  const category = categoryResult.value;
+  const products =
+    productsResult.status === "fulfilled" ? productsResult.value : [];
 
   const categoryName =
     category.nameBn ||
@@ -69,77 +67,7 @@ export default async function CategoryPage({ params }: Props) {
           </h2>
 
           {products.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
-              {products.map((product, index) => {
-                const productSlug =
-                  product.slug ||
-                  product.id ||
-                  product._id;
-
-                const productName =
-                  product.nameBn ||
-                  product.name ||
-                  product.title ||
-                  "পণ্য";
-
-                const productPrice =
-                  product.today ??
-                  product.price ??
-                  product.current_price;
-
-                return (
-                  <Link
-                    key={product._id || product.id || index}
-                    href={`/product/${productSlug}`}
-                    className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:border-green-200 hover:shadow-md"
-                  >
-
-                    <div className="flex items-center gap-3">
-
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#f0f5f1]">
-
-                        {product.image ? (
-                          <img
-                            src={product.image}
-                            alt={productName}
-                            className="h-full w-full object-contain p-2"
-                          />
-                        ) : (
-                          <span>🛒</span>
-                        )}
-
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-
-                        <h3 className="text-sm font-semibold text-gray-900">
-                          {productName}
-                        </h3>
-
-                        <p className="mt-1 text-xs text-gray-500">
-                          {product.unit || "কেজি"}
-                        </p>
-
-                        <p className="mt-2 text-sm font-bold text-green-700">
-                          {productPrice !== undefined
-                            ? `${productPrice} টাকা`
-                            : "দাম পাওয়া যায়নি"}
-                        </p>
-
-                      </div>
-
-                      <span className="text-gray-400">
-                        →
-                      </span>
-
-                    </div>
-
-                  </Link>
-                );
-              })}
-
-            </div>
+            <SortableProductGrid products={products} />
           ) : (
             <div className="rounded-xl bg-white p-10 text-center">
               <p className="text-sm text-gray-500">

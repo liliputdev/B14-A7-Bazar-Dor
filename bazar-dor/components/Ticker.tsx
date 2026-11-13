@@ -3,7 +3,11 @@ import type { Product } from "@/lib/api";
 import { UNIT_BN, arrow, formatPct, tickerColor, toBn } from "@/lib/format";
 
 export default function Ticker({ products }: { products: Product[] }) {
-  const items = [...products, ...products];
+  // Double the list for seamless infinite scroll; prefix keys with copy index
+  const items = [
+    ...products.map((p, i) => ({ ...p, _tickerKey: `a-${i}` })),
+    ...products.map((p, i) => ({ ...p, _tickerKey: `b-${i}` })),
+  ];
 
   return (
     <div
@@ -11,7 +15,7 @@ export default function Ticker({ products }: { products: Product[] }) {
       aria-label="দামের তালিকা"
     >
       <div className="marquee-track">
-        {items.map((p, i) => {
+        {items.map((p) => {
           const unitKey = String(p.unit ?? "").toLowerCase();
           const unit =
             UNIT_BN[unitKey as keyof typeof UNIT_BN] || p.unit || "কেজি";
@@ -28,7 +32,7 @@ export default function Ticker({ products }: { products: Product[] }) {
 
           return (
             <div
-              key={`${p.id ?? p._id ?? p.slug ?? p.nameBn ?? "product"}-${i}`}
+              key={p._tickerKey}
               className="flex items-center gap-2 whitespace-nowrap border-r border-gray-200 px-5 text-sm"
             >
               <span>{p.image || "🛒"}</span>

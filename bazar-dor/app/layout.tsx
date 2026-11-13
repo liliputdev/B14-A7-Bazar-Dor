@@ -19,6 +19,7 @@ const hindSiliguri = Hind_Siliguri({
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-hind-siliguri",
   display: "swap",
+  preload: false,
 });
 
 export const metadata = {

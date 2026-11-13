@@ -1,145 +1,12 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getProduct, type Product } from "@/lib/api";
 
-export const instant = false;
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
-
-type Market = {
-  market?: string;
-  division?: string;
-  min?: number | string;
-  max?: number | string;
-};
-
-type Product = {
-  id?: string | number;
-  _id?: string;
-  slug?: string;
-  nameBn?: string;
-  name?: string;
-  category?: string;
-  categoryNameBn?: string;
-  categoryIcon?: string;
-  unit?: string;
-  image?: string;
-  today?: number | string;
-  yesterday?: number | string;
-  change?: {
-    dir?: "up" | "down" | "same";
-    pct?: number | string;
-  };
-  markets?: Market[];
-};
-
-const API_URL =
-  "https://openapi.programming-hero.com/api/bazardor";
-
-async function fetchJSON(url: string) {
-  const response = await fetch(url, {
-    headers: { Accept: "application/json" },
-    next: { revalidate: 300 },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const payload = await response.json();
-
-  if (payload?.success === false || payload?.status === false) {
-    throw new Error(payload?.message || "API request failed");
-  }
-
-  return payload;
-}
-
-function unwrapArray(payload: any): any[] {
-  let value = payload;
-
-  for (let i = 0; i < 6; i++) {
-    if (Array.isArray(value)) return value;
-
-    if (!value || typeof value !== "object") return [];
-
-    value =
-      value.products ??
-      value.items ??
-      value.results ??
-      value.data ??
-      value.result;
-  }
-
-  return Array.isArray(value) ? value : [];
-}
-
-function unwrapProduct(payload: any): Product | null {
-  let value = payload;
-
-  for (let i = 0; i < 6; i++) {
-    if (!value || typeof value !== "object") return null;
-
-    if (Array.isArray(value)) {
-      value = value[0];
-      continue;
-    }
-
-    if (
-      value.slug !== undefined ||
-      value.nameBn !== undefined ||
-      value.today !== undefined
-    ) {
-      return value as Product;
-    }
-
-    value =
-      value.product ??
-      value.item ??
-      value.data ??
-      value.result;
-  }
-
-  return null;
-}
-
-async function getProductBySlug(slug: string): Promise<Product | null> {
-  // First find the product in the products list.
-  const listPayload = await fetchJSON(`${API_URL}/products`);
-  const products = unwrapArray(listPayload);
-
-  const matched = products.find((item: any) => {
-    const itemSlug = String(item?.slug ?? "").toLowerCase();
-    const itemId = String(item?.id ?? item?._id ?? "").toLowerCase();
-
-    return itemSlug === slug.toLowerCase() ||
-      itemId === slug.toLowerCase();
-  });
-
-  if (!matched) return null;
-
-  const id = matched.id ?? matched._id;
-
-  // Try the individual product endpoint for complete details.
-  if (id !== undefined && id !== null) {
-    try {
-      const detailPayload = await fetchJSON(
-        `${API_URL}/products/${encodeURIComponent(String(id))}`
-      );
-
-      const detail = unwrapProduct(detailPayload);
-
-      if (detail) {
-        return { ...matched, ...detail };
-      }
-    } catch (error) {
-      console.error("Product detail endpoint failed:", error);
-    }
-  }
-
-  // Use the list record if the detail endpoint is unavailable.
-  return matched as Product;
-}
 
 function toNumber(value: unknown): number | undefined {
   if (value === null || value === undefined || value === "") {
@@ -185,10 +52,10 @@ export default async function ProductPage({ params }: Props) {
   let product: Product | null;
 
   try {
-    product = await getProductBySlug(slug);
+    product = await getProduct(slug);
   } catch (error) {
     console.error("Product API error:", error);
-    throw new Error("পণ্যের তথ্য লোড করা যায়নি।");
+    throw error;
   }
 
   if (!product) notFound();
@@ -205,15 +72,19 @@ export default async function ProductPage({ params }: Props) {
       ? today - yesterday
       : undefined;
 
+  const changeDirection = product.change?.dir?.toLowerCase();
   const isUp =
-    product.change?.dir === "up" ||
-    (product.change?.dir !== "down" &&
+    ["up", "increase", "positive", "rise"].includes(changeDirection ?? "") ||
+    (!["down", "decrease", "negative", "fall", "flat", "same"].includes(
+      changeDirection ?? ""
+    ) &&
       difference !== undefined &&
       difference > 0);
-
   const isDown =
-    product.change?.dir === "down" ||
-    (product.change?.dir !== "up" &&
+    ["down", "decrease", "negative", "fall"].includes(changeDirection ?? "") ||
+    (!["up", "increase", "positive", "rise", "flat", "same"].includes(
+      changeDirection ?? ""
+    ) &&
       difference !== undefined &&
       difference < 0);
 
@@ -283,13 +154,13 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-[#f1f6f2] text-[#26332c]">
-  <div className="mx-auto max-w-6xl space-y-12 px-4 pt-6 pb-10">
+      <div className="mx-auto max-w-6xl space-y-12 px-4 pt-6 pb-10">
 
         {/* Breadcrumb */}
         <nav className="mb-[26px] flex min-h-[30px] items-center gap-3 px-2 text-sm text-gray-500">
-          <a href="/" className="hover:text-green-700">
+          <Link href="/" className="hover:text-green-700">
             হোম
-          </a>
+          </Link>
           <span className="text-lg">›</span>
           <span>{product.categoryNameBn || "পণ্য"}</span>
           <span className="text-lg">›</span>
@@ -344,7 +215,7 @@ export default async function ProductPage({ params }: Props) {
             {percentage !== undefined && (
               <p className={`mt-[5px] text-sm font-bold ${changeColor} max-sm:text-[11px]`}>
                 {isUp ? "▲" : isDown ? "▼" : "—"}{" "}
-                {bnNumber(percentage, 1)}%
+                {bnNumber(Math.abs(percentage), 1)}%
               </p>
             )}
           </aside>

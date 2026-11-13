@@ -66,7 +66,7 @@ export default function Navbar({
 
             return (
               <Link
-                key={c.id}
+                key={c.slug ?? c.id ?? c._id}
                 href={`/category/${c.slug}`}
                 aria-current={active ? "page" : undefined}
                 className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition ${

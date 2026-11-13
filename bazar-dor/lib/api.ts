@@ -11,14 +11,26 @@ export type Product = {
   title?: string;
   image?: string;
   category?: string;
+  categoryNameBn?: string;
+  categoryIcon?: string;
   category_name?: string;
   unit?: string;
   today?: number | string;
+  yesterday?: number | string;
+  price?: number | string;
+  current_price?: number | string;
   change?: {
-    dir: string;
-    pct: number | string;
+    dir?: string;
+    pct?: number | string;
   };
-  [key: string]: any;
+  markets?: Market[];
+};
+
+export type Market = {
+  market?: string;
+  division?: string;
+  min?: number | string;
+  max?: number | string;
 };
 
 export type Category = {
@@ -29,8 +41,21 @@ export type Category = {
   nameBn?: string;
   title?: string;
   icon?: string;
-  [key: string]: any;
 };
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 async function apiRequest(endpoint: string) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -43,25 +68,27 @@ async function apiRequest(endpoint: string) {
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    throw new ApiError(`API request failed: ${response.status}`, response.status);
   }
 
-  const result = await response.json();
+  const result: unknown = await response.json();
 
-  if (result?.success === false || result?.status === false) {
-    throw new Error(result?.message || "API request failed");
+  if (isRecord(result) && (result.success === false || result.status === false)) {
+    const message =
+      typeof result.message === "string" ? result.message : "API request failed";
+    throw new Error(message);
   }
 
   return result;
 }
 
-function unwrap(data: any): any {
+function unwrap(data: unknown): unknown {
   let result = data;
 
   for (let i = 0; i < 5; i++) {
-    if (result?.data !== undefined) {
+    if (isRecord(result) && result.data !== undefined) {
       result = result.data;
-    } else if (result?.result !== undefined) {
+    } else if (isRecord(result) && result.result !== undefined) {
       result = result.result;
     } else {
       break;
@@ -71,32 +98,72 @@ function unwrap(data: any): any {
   return result;
 }
 
-function extractArray(data: any, keys: string[]) {
+function extractArray<T extends object>(
+  data: unknown,
+  keys: string[],
+  endpoint: string
+): T[] {
   const result = unwrap(data);
 
-  if (Array.isArray(result)) return result;
+  if (Array.isArray(result)) {
+    if (result.every(isRecord)) return result as T[];
+    throw new Error(`Invalid ${endpoint} response: expected object entries`);
+  }
 
   for (const key of keys) {
-    if (Array.isArray(result?.[key])) {
-      return result[key];
+    if (isRecord(result) && Array.isArray(result[key])) {
+      const items = result[key];
+      if (items.every(isRecord)) return items as T[];
+      throw new Error(`Invalid ${endpoint} response: expected object entries`);
     }
   }
 
-  return [];
+  throw new Error(`Invalid ${endpoint} response: expected an array`);
+}
+
+function extractEntity<T extends object>(
+  data: unknown,
+  entityKeys: string[]
+): T | null {
+  let result = unwrap(data);
+
+  for (let i = 0; i < 5; i++) {
+    if (Array.isArray(result)) {
+      result = result[0];
+      continue;
+    }
+
+    if (!isRecord(result)) return null;
+
+    const record = result;
+    const entityKey = entityKeys.find((key) => record[key] !== undefined);
+    if (entityKey) {
+      result = record[entityKey];
+      continue;
+    }
+
+    return record as T;
+  }
+
+  return null;
 }
 
 // Get all products
 export async function getProducts(): Promise<Product[]> {
   const data = await apiRequest("/products");
 
-  return extractArray(data, ["products", "items", "results"]);
+  return extractArray<Product>(data, ["products", "items", "results"], "products");
 }
 
 // Get all categories
 export async function getCategories(): Promise<Category[]> {
   const data = await apiRequest("/categories");
 
-  return extractArray(data, ["categories", "items", "results"]);
+  return extractArray<Category>(
+    data,
+    ["categories", "items", "results"],
+    "categories"
+  );
 }
 
 // Get products by category
@@ -107,44 +174,37 @@ export async function getProductsByCategory(
     `/products?category=${encodeURIComponent(category)}`
   );
 
-  return extractArray(data, ["products", "items", "results"]);
+  return extractArray<Product>(data, ["products", "items", "results"], "products");
 }
 
 // Get a single product by slug or ID
 export async function getProduct(
   slugOrId: string
 ): Promise<Product | null> {
+  const searchValue = slugOrId.toLowerCase();
+  const products = await getProducts();
+  const matchedProduct = products.find((product) => {
+    const slug = String(product.slug ?? "").toLowerCase();
+    const id = String(product.id ?? product._id ?? "").toLowerCase();
+
+    return slug === searchValue || id === searchValue;
+  });
+
+  if (matchedProduct) {
+    return matchedProduct;
+  }
+
   try {
-    // First search the products list by slug or ID.
-    const products = await getProducts();
-
-    const matchedProduct = products.find((product) => {
-      const slug = String(product.slug ?? "").toLowerCase();
-      const id = String(product.id ?? product._id ?? "").toLowerCase();
-      const searchValue = slugOrId.toLowerCase();
-
-      return slug === searchValue || id === searchValue;
-    });
-
-    if (matchedProduct) {
-      return matchedProduct;
-    }
-
-    // Fallback: Try the individual product endpoint.
     const data = await apiRequest(
       `/products/${encodeURIComponent(slugOrId)}`
     );
-
-    const result = unwrap(data);
-
-    if (Array.isArray(result)) {
-      return result[0] ?? null;
+    return extractEntity<Product>(data, ["product", "item"]);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
     }
 
-    return result?.product ?? result?.item ?? result ?? null;
-  } catch (error) {
-    console.error("Product API request failed:", error);
-    return null;
+    throw error;
   }
 }
 
@@ -157,15 +217,12 @@ export async function getCategory(
       `/categories/${encodeURIComponent(slug)}`
     );
 
-    const result = unwrap(data);
-
-    if (Array.isArray(result)) {
-      return result[0] ?? null;
+    return extractEntity<Category>(data, ["category", "item"]);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
     }
 
-    return result?.category ?? result ?? null;
-  } catch (error) {
-    console.error("Category API request failed:", error);
-    return null;
+    throw error;
   }
 }

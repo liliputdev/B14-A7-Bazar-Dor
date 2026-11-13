@@ -21,20 +21,39 @@ export function parseBengaliNumber(bengaliNumStr: string | number): number {
     .replace(/৮/g, '8')
     .replace(/৯/g, '9');
   
-  return parseFloat(englishDigits.replace(/,/g, '')) || 0;
+  const parsed = parseFloat(englishDigits.replace(/,/g, ''));
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
 }
 
-// C1 Sort implementation
-export function sortProducts<T extends { price: number | string }>(
+export type ProductSortOption = 'default' | 'asc' | 'desc';
+
+type SortableProduct = {
+  today?: number | string;
+  price?: number | string;
+  current_price?: number | string;
+};
+
+export function sortProducts<T extends SortableProduct>(
   products: T[],
-  sortOption: 'default' | 'asc' | 'desc'
+  sortOption: ProductSortOption
 ): T[] {
   if (sortOption === 'default') return products;
 
   return [...products].sort((a, b) => {
-    const priceA = parseBengaliNumber(a.price);
-    const priceB = parseBengaliNumber(b.price);
-    
+    const rawPriceA = a.today ?? a.price ?? a.current_price;
+    const rawPriceB = b.today ?? b.price ?? b.current_price;
+    const priceA =
+      rawPriceA === undefined ? Number.NaN : parseBengaliNumber(rawPriceA);
+    const priceB =
+      rawPriceB === undefined ? Number.NaN : parseBengaliNumber(rawPriceB);
+    const hasPriceA = Number.isFinite(priceA);
+    const hasPriceB = Number.isFinite(priceB);
+
+    if (!hasPriceA || !hasPriceB) {
+      if (hasPriceA === hasPriceB) return 0;
+      return hasPriceA ? -1 : 1;
+    }
+
     return sortOption === 'asc' ? priceA - priceB : priceB - priceA;
   });
 }
