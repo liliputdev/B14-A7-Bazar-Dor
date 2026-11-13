@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProduct, type Product } from "@/lib/api";
 
-export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ slug: string }>;
