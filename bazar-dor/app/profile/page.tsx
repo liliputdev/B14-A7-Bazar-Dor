@@ -1,6 +1,7 @@
 
 "use client";
 
+import Image from "next/image";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,6 +13,7 @@ export default function ProfilePage() {
   const { data: session, isPending } = authClient.useSession();
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   if (isPending) {
     return (
@@ -72,6 +74,10 @@ export default function ProfilePage() {
   };
 
   const logout = async () => {
+    if (signingOut) return;
+
+    setSigningOut(true);
+
     try {
       const { error } = await authClient.signOut();
 
@@ -85,6 +91,8 @@ export default function ProfilePage() {
       router.refresh();
     } catch {
       toast.error("সাইন আউট করা যায়নি");
+    } finally {
+      setSigningOut(false);
     }
   };
 
@@ -95,13 +103,6 @@ export default function ProfilePage() {
           <Link href="/" className="text-xl font-bold text-green-700">
             বাজার দর
           </Link>
-
-          <button
-            onClick={logout}
-            className="border border-red-300 text-red-500 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-red-50"
-          >
-            সাইন আউট
-          </button>
         </div>
 
         <section className="bg-white border border-[#e1e9e2] rounded-xl p-6 shadow-sm">
@@ -109,12 +110,46 @@ export default function ProfilePage() {
             আমার প্রোফাইল
           </h1>
 
-          <div className="mb-6">
-            <p className="text-sm text-gray-500">নাম</p>
-            <p className="font-semibold">{user.name}</p>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[#e1e9e2] bg-[#fbfdfb] p-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-50 text-emerald-700">
+                {user.image ? (
+                  <Image
+                    src={user.image}
+                    alt=""
+                    fill
+                    sizes="48px"
+                    unoptimized
+                    className="object-cover"
+                  />
+                ) : (
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="size-7"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M5 21a7 7 0 0 1 14 0" />
+                  </svg>
+                )}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{user.name}</p>
+                <p className="break-all text-sm text-gray-500">{user.email}</p>
+              </div>
+            </div>
 
-            <p className="text-sm text-gray-500 mt-4">ইমেইল</p>
-            <p className="font-semibold break-all">{user.email}</p>
+            <button
+              type="button"
+              onClick={logout}
+              disabled={signingOut}
+              className="shrink-0 rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 disabled:opacity-60"
+            >
+              {signingOut ? "সাইন আউট হচ্ছে..." : "সাইন আউট"}
+            </button>
           </div>
 
           <div className="border-t pt-5">

@@ -29,6 +29,21 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Authentication environment variables
+
+Set these variables in `bazar-dor/.env` for local development and in **Vercel → Project Settings → Environment Variables** for each deployment environment:
+
+```text
+MONGODB_URI=
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+```
+
+`BETTER_AUTH_SECRET` must be at least 32 characters. Generate a unique value with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` and keep it private. Set the deployed site URL for `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL`, then redeploy. Authentication still requires a valid MongoDB URI and secret at runtime; Google sign-in also requires both Google OAuth values. Never commit or share these secrets.
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
