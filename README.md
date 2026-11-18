@@ -7,7 +7,7 @@
 - **Framework:** Next.js (App Router)
 - **Styling:** Tailwind CSS, DaisyUI
 - **Language:** TypeScript
-- **Authentication:** BetterAuth (Email/Password, Google, GitHub)
+- **Authentication:** BetterAuth (Email/Password, Google)
 - **Icons & Visuals:** Lucide Icons, Custom Vector Illustrations
 - **Notifications:** React Hot Toast
 
